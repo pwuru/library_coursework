@@ -1,9 +1,14 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router';
+import BooksView from '../views/BooksView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    
+      {
+        path: '/',
+        name: 'BooksView',
+        component: BooksView
+      }
     ]
 })
 
