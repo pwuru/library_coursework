@@ -30,13 +30,14 @@ from library.api import RecordViewSet
 
 router = DefaultRouter()
 
-router.register(r"books", BookViewSet, basename = "library")
+router.register(r"books", BookViewSet)
 router.register(r"userProfiles", UserProfileViewSet)
 router.register(r"fines", FineViewSet)
 router.register(r"registrationCards", RegistrationCardViewSet)
 router.register(r"records", RecordViewSet)
 
 urlpatterns = [
+    path('', include(router.urls)),
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
 ]

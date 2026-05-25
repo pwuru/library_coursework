@@ -1,18 +1,18 @@
 <script setup>
-
+import { RouterLink, RouterView } from 'vue-router'
 </script>
 
 <template>
-  <div class="container">
+  <div>
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
       <div class="container-fluid">
-        <a class="navbar-grand" href="#">Navbar</a>
+        <a class="navbar-brand" href="#">Библиотека</a>
         <button
           class="navbar-toggler"
           type="button"
           data-bs-toggle="collapse"
           data-bs-target="#navbarNavDropdown"
-          aria-controls="#navbarNavDropdown"
+          aria-controls="navbarNavDropdown"
           aria-expanded="false"
           aria-label="Toggle navigation"
         >
@@ -27,12 +27,8 @@
         </div>
       </div>
     </nav>
-  </div>
-  <div class="container">
-    <router-view/>
+    <div class="container mt-4">
+      <router-view/>
+    </div>
   </div>
 </template>
-
-<style scoped>
-
-</style>

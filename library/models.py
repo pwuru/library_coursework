@@ -23,16 +23,16 @@ class UserProfile(TimeStampModel):
 
 class RegistrationCard(models.Model):
     photo = models.ImageField("Фото", default = "Нет фото")
-    user = models.ForeignKey("UserProfile", on_delete=models.CASCADE, null=True)
+    user = models.OneToOneField("UserProfile", on_delete=models.CASCADE, null=True)
 
     class Meta:
         verbose_name = "Учетная карточка"
         verbose_name_plural = "Учетные карточки"
 
 class Record(models.Model):
-    book_issue_date = models.TextField("Дата выдачи книги")
-    expected_book_accept_date = models.TextField("Ожидаемая дата возврата книги")
-    book_accept_date = models.TextField("Дата возврата книги")
+    book_issue_date = models.DateField("Дата выдачи книги")
+    expected_book_accept_date = models.DateField("Ожидаемая дата возврата книги")
+    book_accept_date = models.DateField("Дата возврата книги", null=True, blank=True)
     fine_status = models.TextField("Статус штрафа")
     registrationCard = models.ForeignKey("RegistrationCard", on_delete=models.CASCADE, null=True)
     book = models.ForeignKey("Book", on_delete=models.CASCADE, null=True)
@@ -45,7 +45,7 @@ class Record(models.Model):
 class Fine(models.Model):
     fineType = models.TextField("Тип")
     amount = models.TextField("Сумма")
-    date = models.TextField("Дата")
+    date = models.DateField("Дата")
 
     class Meta:
         verbose_name = "Штраф"
@@ -54,7 +54,7 @@ class Fine(models.Model):
 class Book(models.Model):
     name = models.TextField("Название")
     genre = models.TextField("Жанр")
-    date = models.TextField("Дата публикации")
+    date = models.DateField("Дата публикации")
     author = models.TextField("Автор")
 
     class Meta:

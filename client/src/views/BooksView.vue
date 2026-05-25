@@ -52,8 +52,8 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <div class="container-fluid">
-    <div class="p-2">
+  <div class="container-fluid px-4">
+    <div class="p-2 px-0">
       <form @submit.prevent.stop="onBookAdd">
         <div class="row">
           <div class="col">
@@ -101,28 +101,23 @@ onBeforeMount(async () => {
             </div>
           </div>
           <div class="col-auto">
-            <button class="btn btn-primary">Добавить</button>
+            <button class="btn btn-primary"><i class="bi bi-plus-lg"></i></button>
           </div>
         </div>
       </form>
     </div>
 
-    <div v-for="item in books" class="book-item mb-2 p-2 border rounded">
-      <div>
-        <strong>{{ item.name }}</strong> - {{ item.author }} ({{ item.date }}, {{ item.genre }})
-      </div>
-      <div class="mt-2">
-        <button
-          class="btn btn-success me-2"
-          @click="onBookEditClick(item)"
-          data-bs-toggle="modal"
-          data-bs-target="#editBookModal"
-        >
-          Редактировать
-        </button>
-        <button class="btn btn-danger" @click="onRemoveClick(item)">
-          Удалить
-        </button>
+    <div class="px-0">
+      <div v-for="item in books" class="book-item mb-2 p-2 border rounded">
+        <div>
+          <strong>{{ item.name }}</strong> - {{ item.author }} ({{ item.date }}, {{ item.genre }})
+        </div>
+        <div class="mt-2">
+          <button class="btn btn-success me-2" @click="onBookEditClick(item)" data-bs-toggle="modal" data-bs-target="#editBookModal">
+            <i class="bi bi-pencil-fill"></i>
+          </button>
+          <button class="btn btn-danger" @click="onRemoveClick(item)"><i class="bi bi-x"></i></button>
+        </div>
       </div>
     </div>
 
@@ -170,14 +165,28 @@ onBeforeMount(async () => {
 
 <style lang="scss" scoped>
 .book-item {
-  padding: 0.5rem;
+  padding: 0.5rem 1rem;
   margin: 0.5rem 0;
   border: 1px solid silver;
   border-radius: 8px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-content: center;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 16px;
+}
+
+.book-item > div:first-child {
+  flex: 1;
+}
+
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+}
+
+button i {
+  font-size: 16px;
 }
 </style>

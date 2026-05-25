@@ -17,14 +17,14 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      './api': {
-        target: "https://localhost:8000"
+      '/api': {
+        target: "http://localhost:8000"
       },
       '/admin': {
-        target: "https://localhost:8000"
+        target: "http://localhost:8000"
       },
       './static': {
-        target: "https://localhost:8000"
+        target: "http://localhost:8000"
       },
     }
   }
