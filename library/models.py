@@ -30,10 +30,20 @@ class RegistrationCard(models.Model):
         verbose_name_plural = "Учетные карточки"
 
 class Record(models.Model):
+    class FineStatus(models.TextChoices):
+        NO_FINE = 'no_fine', 'Нет'
+        UNPAID = 'unpaid', 'Не оплачен'
+        PAID = 'paid', 'Оплачен'
+
     book_issue_date = models.DateField("Дата выдачи книги")
     expected_book_accept_date = models.DateField("Ожидаемая дата возврата книги")
     book_accept_date = models.DateField("Дата возврата книги", null=True, blank=True)
-    fine_status = models.TextField("Статус штрафа")
+    fine_status = models.CharField(
+        "Статус штрафа",
+        max_length=20,
+        choices=FineStatus.choices,
+        default=FineStatus.NO_FINE
+    )
     registrationCard = models.ForeignKey("RegistrationCard", on_delete=models.CASCADE, null=True)
     book = models.ForeignKey("Book", on_delete=models.CASCADE, null=True)
     fine = models.ForeignKey("Fine", on_delete=models.CASCADE, null=True)
@@ -43,7 +53,17 @@ class Record(models.Model):
         verbose_name_plural = "Записи в учетных карточках"
 
 class Fine(models.Model):
-    fineType = models.TextField("Тип")
+    class FineType(models.TextChoices):
+        OVERDUE = 'overdue', 'Нарушение сроков возврата'
+        DAMAGE = 'damage', 'Порча книги'
+        LOST = 'lost', 'Потеря книги'
+
+    fineType = models.CharField(
+        "Тип",
+        max_length=20,
+        choices=FineType.choices,
+        default=FineType.OVERDUE
+    )
     amount = models.TextField("Сумма")
     date = models.DateField("Дата")
 
@@ -54,7 +74,7 @@ class Fine(models.Model):
 class Book(models.Model):
     name = models.TextField("Название")
     genre = models.TextField("Жанр")
-    date = models.DateField("Дата публикации")
+    date = models.IntegerField("Дата публикации", null=True, blank=True)
     author = models.TextField("Автор")
 
     class Meta:

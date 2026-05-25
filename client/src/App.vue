@@ -23,6 +23,15 @@ import { RouterLink, RouterView } from 'vue-router'
             <li class="nav-item">
               <router-link class="nav-link" to="/">Книги</router-link>
             </li>
+            <li class="nav-item">
+              <router-link class="nav-link" to="/registration-cards">Учетные карточки</router-link>
+            </li>
+            <li class="nav-item">
+              <router-link class="nav-link" to="/records">Записи в уч. карточках</router-link>
+            </li>
+            <li class="nav-item">
+              <router-link class="nav-link" to="/fines">Штрафы</router-link>
+            </li>
           </ul>
         </div>
       </div>

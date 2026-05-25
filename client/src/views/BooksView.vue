@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, onBeforeMount } from 'vue';
+import { ref, onBeforeMount } from 'vue';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
@@ -23,7 +23,8 @@ async function onBookAdd() {
   await axios.post("/api/books/", {
     ...bookToAdd.value,
   });
-  await fetchBooks(); // переподтягиваю
+  await fetchBooks();
+  bookToAdd.value = {};
 }
 
 async function onUpdateBook() {
@@ -42,7 +43,7 @@ async function onBookEditClick(book) {
 
 async function onRemoveClick(book) {
   await axios.delete(`/api/books/${book.id}/`);
-  await fetchBooks(); // переподтягиваю
+  await fetchBooks();
 }
 
 onBeforeMount(async () => {
@@ -64,7 +65,7 @@ onBeforeMount(async () => {
                 v-model="bookToAdd.name"
                 required
               />
-              <label for="floatingInput">Название</label>
+              <label>Название</label>
             </div>
           </div>
           <div class="col">
@@ -81,12 +82,12 @@ onBeforeMount(async () => {
           <div class="col">
             <div class="form-floating">
               <input
-                type="text"
+                type="number"
                 class="form-control"
                 v-model="bookToAdd.date"
                 required
               />
-              <label>Дата публикации</label>
+              <label>Год публикации</label>
             </div>
           </div>
           <div class="col">
@@ -125,8 +126,8 @@ onBeforeMount(async () => {
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h1 class="modal-title fs-5" id="exampleModalLabel">Редактировать книгу</h1>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <h1 class="modal-title fs-5">Редактировать книгу</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
             <div class="form-floating mb-2">
@@ -138,8 +139,8 @@ onBeforeMount(async () => {
               <label>Жанр</label>
             </div>
             <div class="form-floating mb-2">
-              <input type="text" class="form-control" v-model="bookToEdit.date" />
-              <label>Дата публикации</label>
+              <input type="number" class="form-control" v-model="bookToEdit.date" />
+              <label>Год публикации</label>
             </div>
             <div class="form-floating mb-2">
               <input type="text" class="form-control" v-model="bookToEdit.author" />
@@ -148,12 +149,7 @@ onBeforeMount(async () => {
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-            <button
-              type="button"
-              class="btn btn-primary"
-              data-bs-dismiss="modal"
-              @click="onUpdateBook"
-            >
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="onUpdateBook">
               Сохранить
             </button>
           </div>
