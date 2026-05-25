@@ -33,6 +33,15 @@ import { RouterLink, RouterView } from 'vue-router'
               <router-link class="nav-link" to="/fines">Штрафы</router-link>
             </li>
           </ul>
+
+          <ul class="navbar-nav">
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Пользователь</a>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="/admin">Админка</a></li>
+              </ul>
+            </li>
+          </ul>
         </div>
       </div>
     </nav>

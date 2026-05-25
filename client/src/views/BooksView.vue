@@ -111,7 +111,7 @@ onBeforeMount(async () => {
     <div class="px-0">
       <div v-for="item in books" class="book-item mb-2 p-2 border rounded">
         <div>
-          <strong>{{ item.name }}</strong> - {{ item.author }} ({{ item.date }}, {{ item.genre }})
+          <strong>{{ item.name }}</strong> - {{ item.author }} ({{ item.genre }}, {{ item.date }})
         </div>
         <div class="mt-2">
           <button class="btn btn-success me-2" @click="onBookEditClick(item)" data-bs-toggle="modal" data-bs-target="#editBookModal">
