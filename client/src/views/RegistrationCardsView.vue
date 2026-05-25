@@ -11,6 +11,17 @@ const cards = ref([]);
 const loading = ref(false);
 const cardToAdd = ref({})
 const cardToEdit = ref({})
+const cardPictureRef = ref();
+const cardAddImageUrl = ref();
+
+function cardAddPictureChange(event) {
+  const file = event.target.files[0];
+  if (file) {
+    cardAddImageUrl.value = URL.createObjectURL(file);
+  } else {
+    cardAddImageUrl.value = null;
+  }
+}
 
 async function fetchCards() {
   loading.value = true;
@@ -20,11 +31,22 @@ async function fetchCards() {
 }
 
 async function onCardAdd() {
-  await axios.post("/api/registrationCards/", {
-    ...cardToAdd.value,
+  const formData = new FormData();
+
+  formData.append('photo', cardPictureRef.value.files[0]);
+
+  formData.append('user', cardToAdd.value.user)
+  await axios.post("/api/registrationCards/", formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
   });
   await fetchCards();
   cardToAdd.value = {};
+  cardAddImageUrl.value = null;
+  if (cardPictureRef.value) {
+    cardPictureRef.value.value = '';
+  }
 }
 
 async function onUpdateCard() {
@@ -57,13 +79,17 @@ onBeforeMount(async () => {
           <div class="col">
             <div class="form-floating">
               <input
-                type="text"
+                type="file"
+                ref="cardPictureRef"
                 class="form-control"
-                v-model="cardToAdd.photo"
                 required
+                @change="cardAddPictureChange"
               />
               <label for="floatingInput">Фото</label>
             </div>
+          </div>
+          <div class="col-auto">
+            <img :src="cardAddImageUrl" style="max-height: 60px;" alt="">
           </div>
           <div class="col">
             <div class="form-floating">
@@ -85,9 +111,7 @@ onBeforeMount(async () => {
 
     <div class="px-0">
       <div v-for="item in cards" class="card-item mb-2 p-2 border rounded">
-        <div>
-          <strong>{{ item.photo }}</strong> - {{ item.user }}
-        </div>
+        <div v-show="item.picture"><img :src="item.picture" style="max-height: 60px;"></div>
         <div class="mt-2">
           <button class="btn btn-success me-2" @click="onCardEditClick(item)" data-bs-toggle="modal" data-bs-target="#editCardModal">
             <i class="bi bi-pencil-fill"></i>

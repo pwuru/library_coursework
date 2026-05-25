@@ -22,7 +22,7 @@ class UserProfile(TimeStampModel):
             UserProfile.objects.create(user=instance)
 
 class RegistrationCard(models.Model):
-    photo = models.ImageField("Фото", default = "Нет фото")
+    photo = models.ImageField("Фото", default = "Нет фото", null=True, upload_to="library")
     user = models.OneToOneField("UserProfile", on_delete=models.CASCADE, null=True)
 
     class Meta:
