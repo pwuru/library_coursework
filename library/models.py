@@ -18,7 +18,7 @@ class UserProfile(TimeStampModel):
 
     name = models.TextField(null=True)
     phone = models.TextField(null=True)
-    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
+    user = models.OneToOneField('auth.User', on_delete=models.CASCADE, null=True, blank=True)
     type = models.CharField(
         max_length=20,
         choices=Type.choices,

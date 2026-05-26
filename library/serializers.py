@@ -41,4 +41,4 @@ class RegistrationCardSerializer(serializers.ModelSerializer):
 class RecordSerializer(serializers.ModelSerializer):
     class Meta:
         model = Record
-        fields = ['id', 'book_issue_date', 'expected_book_accept_date', 'book_accept_date', 'fine_status']
+        fields = ['id', 'book_issue_date', 'expected_book_accept_date', 'book_accept_date', 'fine_status', 'registrationCard', 'book', 'fine']

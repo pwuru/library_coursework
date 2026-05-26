@@ -82,3 +82,10 @@ class RecordViewSet(
 ):
     queryset = Record.objects.all()
     serializer_class = RecordSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        
+        if not self.request.user.is_superuser:
+            qs = qs.filter(registrationCard__user=self.request.user)
+        return qs
