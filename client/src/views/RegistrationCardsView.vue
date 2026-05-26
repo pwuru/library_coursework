@@ -111,7 +111,11 @@ onBeforeMount(async () => {
 
     <div class="px-0">
       <div v-for="item in cards" class="card-item mb-2 p-2 border rounded">
-        <div v-show="item.picture"><img :src="item.picture" style="max-height: 60px;"></div>
+        <div>ID карточки: <strong>{{ item.id }}</strong>, ID пользователя: <strong>{{ item.user }}</strong></div>
+        <div v-if="item.photo" class="card-photo">
+          <img :src="item.photo.replace('localhost:5173', 'localhost:8000')" style="max-height: 60px;" alt="Фото карточки">
+        </div>
+        <div v-else>Нет фото</div>
         <div class="mt-2">
           <button class="btn btn-success me-2" @click="onCardEditClick(item)" data-bs-toggle="modal" data-bs-target="#editCardModal">
             <i class="bi bi-pencil-fill"></i>
@@ -168,6 +172,10 @@ onBeforeMount(async () => {
 
 .card-item > div:first-child {
   flex: 1;
+}
+
+.card-photo {
+  margin-right: 20px;
 }
 
 button {

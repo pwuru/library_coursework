@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 class TimeStampModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, null=True)
@@ -9,20 +11,29 @@ class TimeStampModel(models.Model):
         abstract = True
 
 class UserProfile(TimeStampModel):
-    class Type:
-        employee = 'employee', 'работник'
-        reader = 'reader', 'читатель'
+    class Type(models.TextChoices):
+        ADMIN = 'admin', 'администратор'
+        EMPLOYEE = 'employee', 'работник'
+        READER = 'reader', 'читатель'
 
     name = models.TextField(null=True)
     phone = models.TextField(null=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
+    type = models.CharField(
+        max_length=20,
+        choices=Type.choices,
+        default=Type.READER,
+        null=True,
+        blank=True
+    )
 
-    def create_user_profile(sender, instance, created, **kwargs):
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
         if created:
             UserProfile.objects.create(user=instance)
 
 class RegistrationCard(models.Model):
-    photo = models.ImageField("Фото", default = "Нет фото", null=True, upload_to="library")
+    photo = models.ImageField("Фото", upload_to="registration_cards", null=True, blank=True)
     user = models.OneToOneField("UserProfile", on_delete=models.CASCADE, null=True)
 
     class Meta:
