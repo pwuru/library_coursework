@@ -13,6 +13,10 @@ const bookToAdd = ref({})
 const bookToEdit = ref({})
 const bookPictureRef = ref();
 const bookAddImageUrl = ref();
+const bookEditPictureRef = ref();
+const bookEditImageUrl = ref();
+const showImageModal = ref(false);
+const currentImageUrl = ref('');
 
 function bookAddPictureChange(event) {
   const file = event.target.files[0];
@@ -20,6 +24,15 @@ function bookAddPictureChange(event) {
     bookAddImageUrl.value = URL.createObjectURL(file);
   } else {
     bookAddImageUrl.value = null;
+  }
+}
+
+function bookEditPictureChange(event) {
+  const file = event.target.files[0];
+  if (file) {
+    bookEditImageUrl.value = URL.createObjectURL(file);
+  } else {
+    bookEditImageUrl.value = null;
   }
 }
 
@@ -55,22 +68,46 @@ async function onBookAdd() {
 }
 
 async function onUpdateBook() {
-  await axios.put(`/api/books/${bookToEdit.value.id}/`, {
-    name: bookToEdit.value.name,
-    genre: bookToEdit.value.genre,
-    date: bookToEdit.value.date,
-    author: bookToEdit.value.author
+  const formData = new FormData();
+  
+  if (bookEditPictureRef.value && bookEditPictureRef.value.files[0]) {
+    formData.append('photo', bookEditPictureRef.value.files[0]);
+  }
+  
+  formData.append('name', bookToEdit.value.name);
+  formData.append('genre', bookToEdit.value.genre);
+  formData.append('date', bookToEdit.value.date);
+  formData.append('author', bookToEdit.value.author);
+  
+  await axios.put(`/api/books/${bookToEdit.value.id}/`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
   });
   await fetchBooks();
+  bookEditImageUrl.value = null;
+  if (bookEditPictureRef.value) {
+    bookEditPictureRef.value.value = '';
+  }
 }
 
 async function onBookEditClick(book) {
   bookToEdit.value = { ...book };
+  if (book.photo) {
+    bookEditImageUrl.value = book.photo.replace('localhost:5173', 'localhost:8000');
+  } else {
+    bookEditImageUrl.value = null;
+  }
 }
 
 async function onRemoveClick(book) {
   await axios.delete(`/api/books/${book.id}/`);
   await fetchBooks();
+}
+
+function openImageModal(photoUrl) {
+  currentImageUrl.value = photoUrl.replace('localhost:5173', 'localhost:8000');
+  showImageModal.value = true;
 }
 
 onBeforeMount(async () => {
@@ -154,7 +191,14 @@ onBeforeMount(async () => {
           <strong>{{ item.name }}</strong> - {{ item.author }} ({{ item.date }}, {{ item.genre }})
         </div>
         <div v-if="item.photo" class="book-photo">
-          <img :src="item.photo.replace('localhost:5173', 'localhost:8000')" style="max-height: 60px;" alt="Фото книги">
+          <img 
+            :src="item.photo.replace('localhost:5173', 'localhost:8000')" 
+            style="max-height: 60px; cursor: pointer;" 
+            alt="Фото книги"
+            @click="openImageModal(item.photo)"
+            data-bs-toggle="modal"
+            data-bs-target="#imageModal"
+          >
         </div>
         <div v-else>Нет фото</div>
         <div class="mt-2">
@@ -175,6 +219,13 @@ onBeforeMount(async () => {
           </div>
           <div class="modal-body">
             <div class="form-floating mb-2">
+              <input type="file" class="form-control" ref="bookEditPictureRef" @change="bookEditPictureChange" />
+              <label>Фото</label>
+            </div>
+            <div class="mb-2">
+              <img :src="bookEditImageUrl" style="max-height: 100px;" alt="Фото">
+            </div>
+            <div class="form-floating mb-2">
               <input type="text" class="form-control" v-model="bookToEdit.name" />
               <label>Название</label>
             </div>
@@ -192,9 +243,30 @@ onBeforeMount(async () => {
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              <i class="bi bi-x-lg"></i>
+            </button>
             <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="onUpdateBook">
-              Сохранить
+              <i class="bi bi-check-lg"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="imageModal" tabindex="-1" data-bs-backdrop="static">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Просмотр фото</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body text-center">
+            <img :src="currentImageUrl" style="max-width: 100%; max-height: 70vh;" alt="Фото">
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              <i class="bi bi-x-lg"></i>
             </button>
           </div>
         </div>

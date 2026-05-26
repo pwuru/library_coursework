@@ -13,9 +13,10 @@ const cardToAdd = ref({})
 const cardToEdit = ref({})
 const cardPictureRef = ref();
 const cardAddImageUrl = ref();
-
-const users = ref([]);
-const selectedUserId = ref(null);
+const cardEditPictureRef = ref();
+const cardEditImageUrl = ref();
+const showImageModal = ref(false);
+const currentImageUrl = ref('');
 
 function cardAddPictureChange(event) {
   const file = event.target.files[0];
@@ -26,30 +27,30 @@ function cardAddPictureChange(event) {
   }
 }
 
+function cardEditPictureChange(event) {
+  const file = event.target.files[0];
+  if (file) {
+    cardEditImageUrl.value = URL.createObjectURL(file);
+  } else {
+    cardEditImageUrl.value = null;
+  }
+}
+
 async function fetchCards() {
   loading.value = true;
-
-  let url = "/api/registrationCards/";
-  if (selectedUserId.value) {
-    url += `?user_id=${selectedUserId.value}`;
-  }
-
   const r = await axios.get("/api/registrationCards/");
   cards.value = r.data;
   loading.value = false;
 }
 
-async function fetchUsers() {
-  const r = await axios.get("/api/userProfiles/");
-  users.value = r.data;
-} 
-
 async function onCardAdd() {
   const formData = new FormData();
 
-  formData.append('photo', cardPictureRef.value.files[0]);
+  if (cardPictureRef.value && cardPictureRef.value.files[0]) {
+    formData.append('photo', cardPictureRef.value.files[0]);
+  }
 
-  formData.append('user', cardToAdd.value.user)
+  formData.append('user', cardToAdd.value.user);
   await axios.post("/api/registrationCards/", formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
@@ -64,20 +65,43 @@ async function onCardAdd() {
 }
 
 async function onUpdateCard() {
-  await axios.put(`/api/registrationCards/${cardToEdit.value.id}/`, {
-    photo: cardToEdit.value.photo,
-    user: cardToEdit.value.user
+  const formData = new FormData();
+  
+  if (cardEditPictureRef.value && cardEditPictureRef.value.files[0]) {
+    formData.append('photo', cardEditPictureRef.value.files[0]);
+  }
+  
+  formData.append('user', cardToEdit.value.user);
+  
+  await axios.put(`/api/registrationCards/${cardToEdit.value.id}/`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
   });
   await fetchCards();
+  cardEditImageUrl.value = null;
+  if (cardEditPictureRef.value) {
+    cardEditPictureRef.value.value = '';
+  }
 }
 
 async function onCardEditClick(card) {
   cardToEdit.value = { ...card };
+  if (card.photo) {
+    cardEditImageUrl.value = card.photo.replace('localhost:5173', 'localhost:8000');
+  } else {
+    cardEditImageUrl.value = null;
+  }
 }
 
 async function onRemoveClick(card) {
   await axios.delete(`/api/registrationCards/${card.id}/`);
   await fetchCards();
+}
+
+function openImageModal(photoUrl) {
+  currentImageUrl.value = photoUrl.replace('localhost:5173', 'localhost:8000');
+  showImageModal.value = true;
 }
 
 onBeforeMount(async () => {
@@ -88,7 +112,7 @@ onBeforeMount(async () => {
 <template>
   <div class="container-fluid px-4">
     <div class="p-2 px-0">
-      <form @submit.prevent.stop="onCardAdd">
+      <form @submit.prevent.stop="onCardAdd" enctype="multipart/form-data">
         <div class="row">
           <div class="col">
             <div class="form-floating">
@@ -96,10 +120,9 @@ onBeforeMount(async () => {
                 type="file"
                 ref="cardPictureRef"
                 class="form-control"
-                required
                 @change="cardAddPictureChange"
               />
-              <label for="floatingInput">Фото</label>
+              <label>Фото</label>
             </div>
           </div>
           <div class="col-auto">
@@ -127,7 +150,14 @@ onBeforeMount(async () => {
       <div v-for="item in cards" class="card-item mb-2 p-2 border rounded">
         <div>ID карточки: <strong>{{ item.id }}</strong>, ID пользователя: <strong>{{ item.user }}</strong></div>
         <div v-if="item.photo" class="card-photo">
-          <img :src="item.photo.replace('localhost:5173', 'localhost:8000')" style="max-height: 60px;" alt="Фото карточки">
+          <img 
+            :src="item.photo.replace('localhost:5173', 'localhost:8000')" 
+            style="max-height: 60px; cursor: pointer;" 
+            alt="Фото карточки"
+            @click="openImageModal(item.photo)"
+            data-bs-toggle="modal"
+            data-bs-target="#imageModal"
+          >
         </div>
         <div v-else>Нет фото</div>
         <div class="mt-2">
@@ -143,13 +173,16 @@ onBeforeMount(async () => {
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h1 class="modal-title fs-5" id="exampleModalLabel">Редактировать учетную карточку</h1>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <h1 class="modal-title fs-5">Редактировать учетную карточку</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
             <div class="form-floating mb-2">
-              <input type="text" class="form-control" v-model="cardToEdit.photo" />
+              <input type="file" class="form-control" ref="cardEditPictureRef" @change="cardEditPictureChange" />
               <label>Фото</label>
+            </div>
+            <div class="mb-2">
+              <img :src="cardEditImageUrl" style="max-height: 100px;" alt="Текущее фото">
             </div>
             <div class="form-floating mb-2">
               <input type="text" class="form-control" v-model="cardToEdit.user" />
@@ -157,14 +190,30 @@ onBeforeMount(async () => {
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-            <button
-              type="button"
-              class="btn btn-primary"
-              data-bs-dismiss="modal"
-              @click="onUpdateCard"
-            >
-              Сохранить
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              <i class="bi bi-x-lg"></i>
+            </button>
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="onUpdateCard">
+              <i class="bi bi-check-lg"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="imageModal" tabindex="-1" data-bs-backdrop="static">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Просмотр фото</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body text-center">
+            <img :src="currentImageUrl" style="max-width: 100%; max-height: 70vh;" alt="Фото">
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              <i class="bi bi-x-lg"></i>
             </button>
           </div>
         </div>
@@ -184,12 +233,12 @@ onBeforeMount(async () => {
   align-items: center;
 }
 
-.card-item > div:first-child {
-  flex: 1;
-}
-
 .card-photo {
   margin-right: 20px;
+}
+
+.card-item > div:first-child {
+  flex: 1;
 }
 
 button {

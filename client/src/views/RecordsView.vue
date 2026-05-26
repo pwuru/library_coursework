@@ -247,16 +247,18 @@ function formatFineType(type) {
               <select class="form-control" v-model="recordToEdit.fine">
                 <option :value="null">Не выбрано</option>
                 <option v-for="fine in fines" :key="fine.id" :value="fine.id">
-                  {{ fine.fineType }} - {{ fine.amount }} руб.
+                  {{ formatFineType(fine.fineType) }} - {{ fine.amount }} руб.
                 </option>
               </select>
               <label>Штраф</label>
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              <i class="bi bi-x-lg"></i>
+            </button>
             <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="onUpdateRecord">
-              Сохранить
+              <i class="bi bi-check-lg"></i>
             </button>
           </div>
         </div>
