@@ -87,6 +87,7 @@ class Book(models.Model):
     genre = models.TextField("Жанр")
     date = models.IntegerField("Дата публикации", null=True, blank=True)
     author = models.TextField("Автор")
+    photo = models.ImageField("Фото", upload_to="books", null=True, blank=True)
 
     class Meta:
         verbose_name = "Книга"

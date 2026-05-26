@@ -11,6 +11,17 @@ const books = ref([]);
 const loading = ref(false);
 const bookToAdd = ref({})
 const bookToEdit = ref({})
+const bookPictureRef = ref();
+const bookAddImageUrl = ref();
+
+function bookAddPictureChange(event) {
+  const file = event.target.files[0];
+  if (file) {
+    bookAddImageUrl.value = URL.createObjectURL(file);
+  } else {
+    bookAddImageUrl.value = null;
+  }
+}
 
 async function fetchBooks() {
   loading.value = true;
@@ -20,11 +31,27 @@ async function fetchBooks() {
 }
 
 async function onBookAdd() {
-  await axios.post("/api/books/", {
-    ...bookToAdd.value,
+  const formData = new FormData();
+
+  if (bookPictureRef.value && bookPictureRef.value.files[0]) {
+    formData.append('photo', bookPictureRef.value.files[0]);
+  }
+
+  formData.append('name', bookToAdd.value.name);
+  formData.append('genre', bookToAdd.value.genre);
+  formData.append('date', bookToAdd.value.date);
+  formData.append('author', bookToAdd.value.author);
+  await axios.post("/api/books/", formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
   });
   await fetchBooks();
   bookToAdd.value = {};
+  bookAddImageUrl.value = null;
+  if (bookPictureRef.value) {
+    bookPictureRef.value.value = '';
+  }
 }
 
 async function onUpdateBook() {
@@ -49,14 +76,27 @@ async function onRemoveClick(book) {
 onBeforeMount(async () => {
   await fetchBooks();
 })
-
 </script>
 
 <template>
   <div class="container-fluid px-4">
     <div class="p-2 px-0">
-      <form @submit.prevent.stop="onBookAdd">
+      <form @submit.prevent.stop="onBookAdd" enctype="multipart/form-data">
         <div class="row">
+          <div class="col">
+            <div class="form-floating">
+              <input
+                type="file"
+                ref="bookPictureRef"
+                class="form-control"
+                @change="bookAddPictureChange"
+              />
+              <label>Фото</label>
+            </div>
+          </div>
+          <div class="col-auto">
+            <img :src="bookAddImageUrl" style="max-height: 60px;" alt="">
+          </div>
           <div class="col">
             <div class="form-floating">
               <input
@@ -111,8 +151,12 @@ onBeforeMount(async () => {
     <div class="px-0">
       <div v-for="item in books" class="book-item mb-2 p-2 border rounded">
         <div>
-          <strong>{{ item.name }}</strong> - {{ item.author }} ({{ item.genre }}, {{ item.date }})
+          <strong>{{ item.name }}</strong> - {{ item.author }} ({{ item.date }}, {{ item.genre }})
         </div>
+        <div v-if="item.photo" class="book-photo">
+          <img :src="item.photo.replace('localhost:5173', 'localhost:8000')" style="max-height: 60px;" alt="Фото книги">
+        </div>
+        <div v-else>Нет фото</div>
         <div class="mt-2">
           <button class="btn btn-success me-2" @click="onBookEditClick(item)" data-bs-toggle="modal" data-bs-target="#editBookModal">
             <i class="bi bi-pencil-fill"></i>
@@ -168,6 +212,10 @@ onBeforeMount(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.book-photo {
+  margin-right: 20px;
 }
 
 .book-item > div:first-child {

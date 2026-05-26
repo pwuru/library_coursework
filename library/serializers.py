@@ -14,7 +14,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 class BookSerializer(serializers.ModelSerializer):
     class Meta:
         model = Book
-        fields = ['id', 'name', 'genre', 'date', 'author']
+        fields = ['id', 'name', 'genre', 'date', 'author', 'photo']
 
 class FineSerializer(serializers.ModelSerializer):
     class Meta:
