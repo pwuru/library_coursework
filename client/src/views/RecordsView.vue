@@ -78,6 +78,16 @@ onBeforeMount(async () => {
   await fetchBooks();
   await fetchFines();
 })
+
+function formatFineType(type) {
+  const map = {
+    'overdue': 'Нарушение сроков возврата',
+    'damage': 'Порча книги',
+    'lost': 'Потеря книги'  
+  };
+  return map[type] || type;
+}
+
 </script>
 
 <template>
@@ -154,7 +164,7 @@ onBeforeMount(async () => {
               <select class="form-control" v-model="recordToAdd.fine">
                 <option :value="null">Не выбрано</option>
                 <option v-for="fine in fines" :key="fine.id" :value="fine.id">
-                  {{ fine.fineType }} - {{ fine.amount }} руб.
+                  {{ formatFineType(fine.fineType) }} - {{ fine.amount }} руб.
                 </option>
               </select>
               <label>Штраф</label>
@@ -170,13 +180,13 @@ onBeforeMount(async () => {
     <div class="px-0">
       <div v-for="item in records" class="record-item mb-2 p-2 border rounded">
         <div>
-          <strong>Выдача: {{ formatDate(item.book_issue_date) }}</strong> | 
-          Ожидаемый возврат: {{ formatDate(item.expected_book_accept_date) }} | 
-          Возврат: {{ formatDate(item.book_accept_date) || 'не возвращена' }} | 
-          Статус: 
-          <span v-if="item.fine_status === 'no_fine'">Нет</span>
-          <span v-else-if="item.fine_status === 'unpaid'">Не оплачен</span>
-          <span v-else-if="item.fine_status === 'paid'">Оплачен</span>
+          Дата выдачи: {{ formatDate(item.book_issue_date) }},
+          ожидаемая дата возврата: {{ formatDate(item.expected_book_accept_date) }}, 
+          дата возврата: {{ formatDate(item.book_accept_date) || 'не возвращена' }}, 
+          штраф:
+          <span v-if="item.fine_status === 'no_fine'">нет</span>
+          <span v-else-if="item.fine_status === 'unpaid'">не оплачен</span>
+          <span v-else-if="item.fine_status === 'paid'">оплачен</span>
         </div>
         <div class="mt-2">
           <button class="btn btn-success me-2" @click="onRecordEditClick(item)" data-bs-toggle="modal" data-bs-target="#editRecordModal">

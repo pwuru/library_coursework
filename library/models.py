@@ -34,7 +34,7 @@ def create_user_profile(sender, instance, created, **kwargs):
 
 class RegistrationCard(models.Model):
     photo = models.ImageField("Фото", upload_to="registration_cards", null=True, blank=True)
-    user = models.OneToOneField("UserProfile", on_delete=models.CASCADE, null=True)
+    user = models.OneToOneField('auth.User', on_delete=models.CASCADE, null=True)
 
     class Meta:
         verbose_name = "Учетная карточка"

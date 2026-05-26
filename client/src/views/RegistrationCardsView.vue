@@ -14,6 +14,9 @@ const cardToEdit = ref({})
 const cardPictureRef = ref();
 const cardAddImageUrl = ref();
 
+const users = ref([]);
+const selectedUserId = ref(null);
+
 function cardAddPictureChange(event) {
   const file = event.target.files[0];
   if (file) {
@@ -25,10 +28,21 @@ function cardAddPictureChange(event) {
 
 async function fetchCards() {
   loading.value = true;
+
+  let url = "/api/registrationCards/";
+  if (selectedUserId.value) {
+    url += `?user_id=${selectedUserId.value}`;
+  }
+
   const r = await axios.get("/api/registrationCards/");
   cards.value = r.data;
   loading.value = false;
 }
+
+async function fetchUsers() {
+  const r = await axios.get("/api/userProfiles/");
+  users.value = r.data;
+} 
 
 async function onCardAdd() {
   const formData = new FormData();

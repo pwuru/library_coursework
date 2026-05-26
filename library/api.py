@@ -1,5 +1,6 @@
 from rest_framework.viewsets import GenericViewSet
 from rest_framework import mixins, viewsets
+from rest_framework.permissions import IsAuthenticated
 
 from library.models import Book
 from library.models import Fine
@@ -55,6 +56,21 @@ class RegistrationCardViewSet(
 ):
     queryset = RegistrationCard.objects.all()
     serializer_class = RegistrationCardSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        
+        if self.request.user.is_superuser:
+            user_id = self.request.query_params.get('user_id')
+            if user_id:
+
+                qs = qs.filter(user_id=user_id)
+            return qs
+        # фильтруем по текущему юзеру
+        return qs.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 class RecordViewSet(
     mixins.CreateModelMixin,

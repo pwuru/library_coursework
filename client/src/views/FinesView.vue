@@ -48,6 +48,21 @@ async function onRemoveClick(fine) {
 onBeforeMount(async () => {
   await fetchFines();
 })
+
+function formatDate(date) {
+  if (!date) return '';
+  return new Date(date).toLocaleDateString('ru-RU');
+}
+
+function formatFineType(type) {
+  const types = {
+    'overdue': 'Нарушение сроков возврата',
+    'damage': 'Порча книги',
+    'lost': 'Потеря книги'
+  };
+  return types[type] || type;
+}
+
 </script>
 
 <template>
@@ -79,7 +94,7 @@ onBeforeMount(async () => {
           <div class="col">
             <div class="form-floating">
               <input
-                type="text"
+                type="date"
                 class="form-control"
                 v-model="fineToAdd.date"
                 required
@@ -97,7 +112,7 @@ onBeforeMount(async () => {
     <div class="px-0">
       <div v-for="item in fines" class="fine-item mb-2 p-2 border rounded">
         <div>
-          <strong>{{ item.fineType }}</strong> - {{ item.amount }} руб. ({{ item.date }})
+          <strong>{{ formatFineType(item.fineType) }}</strong> - {{ item.amount }} руб. ({{ formatDate(item.date) }})
         </div>
         <div class="mt-2">
           <button class="btn btn-success me-2" @click="onFineEditClick(item)" data-bs-toggle="modal" data-bs-target="#editFineModal">
@@ -129,7 +144,7 @@ onBeforeMount(async () => {
               <label>Сумма</label>
             </div>
             <div class="form-floating mb-2">
-              <input type="text" class="form-control" v-model="fineToEdit.date" />
+              <input type="date" class="form-control" v-model="fineToEdit.date" />
               <label>Дата</label>
             </div>
           </div>
