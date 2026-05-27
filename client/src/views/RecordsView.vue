@@ -14,6 +14,7 @@ const fines = ref([]);
 const loading = ref(false);
 const recordToAdd = ref({})
 const recordToEdit = ref({})
+const stats = ref({});
 
 async function fetchRecords() {
   loading.value = true;
@@ -37,11 +38,17 @@ async function fetchFines() {
   fines.value = r.data;
 }
 
+async function fetchStats() {
+  const r = await axios.get("/api/records/stats/");
+  stats.value = r.data;
+}
+
 async function onRecordAdd() {
   await axios.post("/api/records/", {
     ...recordToAdd.value,
   });
   await fetchRecords();
+  await fetchStats();
   recordToAdd.value = {};
 }
 
@@ -56,6 +63,7 @@ async function onUpdateRecord() {
     fine: recordToEdit.value.fine
   });
   await fetchRecords();
+  await fetchStats();
 }
 
 async function onRecordEditClick(record) {
@@ -65,6 +73,7 @@ async function onRecordEditClick(record) {
 async function onRemoveClick(record) {
   await axios.delete(`/api/records/${record.id}/`);
   await fetchRecords();
+  await fetchStats();
 }
 
 function formatDate(date) {
@@ -77,6 +86,7 @@ onBeforeMount(async () => {
   await fetchCards();
   await fetchBooks();
   await fetchFines();
+  await fetchStats();
 })
 
 function formatFineType(type) {
@@ -92,6 +102,13 @@ function formatFineType(type) {
 
 <template>
   <div class="container-fluid px-4">
+    <div class="d-flex gap-3 p-2 border rounded mb-3">
+      <span>Всего записей: {{ stats.count || 0 }}</span>
+      <span>Средний ID: {{ stats.avg_id ? Math.round(stats.avg_id) : 0 }}</span>
+      <span>Максимальный ID: {{ stats.max_id || 0 }}</span>
+      <span>Минимальный ID: {{ stats.min_id || 0 }}</span>
+    </div>
+
     <div class="p-2 px-0">
       <form @submit.prevent.stop="onRecordAdd">
         <div class="row">

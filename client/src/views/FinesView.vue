@@ -11,6 +11,7 @@ const fines = ref([]);
 const loading = ref(false);
 const fineToAdd = ref({})
 const fineToEdit = ref({})
+const stats = ref({});
 
 async function fetchFines() {
   loading.value = true;
@@ -19,11 +20,17 @@ async function fetchFines() {
   loading.value = false;
 }
 
+async function fetchStats() {
+  const r = await axios.get("/api/fines/stats/");
+  stats.value = r.data;
+}
+
 async function onFineAdd() {
   await axios.post("/api/fines/", {
     ...fineToAdd.value,
   });
   await fetchFines();
+  await fetchStats();
   fineToAdd.value = {};
 }
 
@@ -34,6 +41,7 @@ async function onUpdateFine() {
     date: fineToEdit.value.date
   });
   await fetchFines();
+  await fetchStats();
 }
 
 async function onFineEditClick(fine) {
@@ -43,10 +51,12 @@ async function onFineEditClick(fine) {
 async function onRemoveClick(fine) {
   await axios.delete(`/api/fines/${fine.id}/`);
   await fetchFines();
+  await fetchStats();
 }
 
 onBeforeMount(async () => {
   await fetchFines();
+  await fetchStats();
 })
 
 function formatDate(date) {
@@ -67,6 +77,13 @@ function formatFineType(type) {
 
 <template>
   <div class="container-fluid px-4">
+    <div class="d-flex gap-3 p-2 border rounded mb-3">
+      <span>Всего штрафов: {{ stats.count || 0 }}</span>
+      <span>Средняя сумма: {{ stats.avg_amount ? Math.round(stats.avg_amount) : 0 }} руб.</span>
+      <span>Максимальная сумма: {{ stats.max_amount || 0 }} руб.</span>
+      <span>Минимальная сумма: {{ stats.min_amount || 0 }} руб.</span>
+    </div>
+
     <div class="p-2 px-0">
       <form @submit.prevent.stop="onFineAdd">
         <div class="row">

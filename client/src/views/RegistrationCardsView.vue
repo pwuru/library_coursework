@@ -17,6 +17,7 @@ const cardEditPictureRef = ref();
 const cardEditImageUrl = ref();
 const showImageModal = ref(false);
 const currentImageUrl = ref('');
+const stats = ref({});
 
 function cardAddPictureChange(event) {
   const file = event.target.files[0];
@@ -43,6 +44,11 @@ async function fetchCards() {
   loading.value = false;
 }
 
+async function fetchStats() {
+  const r = await axios.get("/api/registrationCards/stats/");
+  stats.value = r.data;
+}
+
 async function onCardAdd() {
   const formData = new FormData();
 
@@ -57,6 +63,7 @@ async function onCardAdd() {
     }
   });
   await fetchCards();
+  await fetchStats();
   cardToAdd.value = {};
   cardAddImageUrl.value = null;
   if (cardPictureRef.value) {
@@ -79,6 +86,7 @@ async function onUpdateCard() {
     }
   });
   await fetchCards();
+  await fetchStats();
   cardEditImageUrl.value = null;
   if (cardEditPictureRef.value) {
     cardEditPictureRef.value.value = '';
@@ -97,6 +105,7 @@ async function onCardEditClick(card) {
 async function onRemoveClick(card) {
   await axios.delete(`/api/registrationCards/${card.id}/`);
   await fetchCards();
+  await fetchStats();
 }
 
 function openImageModal(photoUrl) {
@@ -106,11 +115,18 @@ function openImageModal(photoUrl) {
 
 onBeforeMount(async () => {
   await fetchCards();
+  await fetchStats();
 })
 </script>
 
 <template>
   <div class="container-fluid px-4">
+    <div class="d-flex gap-3 p-2 border rounded mb-3">
+      <span>Всего карточек: {{ stats.count || 0 }}</span>
+      <span>Средний ID: {{ stats.avg_id ? Math.round(stats.avg_id) : 0 }}</span>
+      <span>Максимальный ID: {{ stats.max_id || 0 }}</span>
+      <span>Минимальный ID: {{ stats.min_id || 0 }}</span>
+    </div>
     <div class="p-2 px-0">
       <form @submit.prevent.stop="onCardAdd" enctype="multipart/form-data">
         <div class="row">
