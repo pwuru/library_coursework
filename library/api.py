@@ -1,6 +1,10 @@
 from rest_framework.viewsets import GenericViewSet
 from rest_framework import mixins, viewsets
 from rest_framework.permissions import IsAuthenticated
+from django.db.models import Avg, Count, Max, Min
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import serializers
 
 from library.models import Book
 from library.models import Fine
@@ -34,6 +38,25 @@ class BookViewSet(
 ):
     queryset = Book.objects.all()
     serializer_class = BookSerializer
+
+    class StatsSerializer(serializers.Serializer):
+        count = serializers.IntegerField();
+        avg_year = serializers.FloatField();
+        max_year = serializers.IntegerField();
+        min_year = serializers.IntegerField();
+
+    @action(detail=False, methods=["GET"], url_path="stats")
+    def get_stats(self, request, *args, **kwargs):
+        stats = Book.objects.aggregate(
+            count=Count("*"),
+            avg_year=Avg("date"),
+            max_year=Max("date"),
+            min_year=Min("date"),
+        )
+        
+        serializer = self.StatsSerializer(instance=stats)
+
+        return Response(serializer.data)
 
 class FineViewSet(
     mixins.CreateModelMixin,
