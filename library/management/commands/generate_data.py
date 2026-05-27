@@ -23,7 +23,7 @@ class Command(BaseCommand):
         for _ in range(1000):
             Fine.objects.create(
                 fineType=random.choice(fine_types),
-                amount=str(random.randint(100, 5000)),
+                amount=random.randint(100, 5000),
                 date=fake.date()
             )
 

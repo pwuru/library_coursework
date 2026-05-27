@@ -28,6 +28,24 @@ class UserProfileViewSet(
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
 
+    class StatsSerializer(serializers.Serializer):
+        count = serializers.IntegerField()
+        avg_id = serializers.FloatField()
+        max_id = serializers.IntegerField()
+        min_id = serializers.IntegerField()
+
+    @action(detail=False, methods=["GET"], url_path="stats")
+    def get_stats(self, request, *args, **kwargs):
+        stats = UserProfile.objects.aggregate(
+            count=Count("*"),
+            avg_id=Avg("id"),
+            max_id=Max("id"),
+            min_id=Min("id"),
+        )
+        
+        serializer = self.StatsSerializer(instance=stats)
+        return Response(serializer.data)
+
 class BookViewSet(
     mixins.CreateModelMixin,
     mixins.UpdateModelMixin,
@@ -69,6 +87,30 @@ class FineViewSet(
     queryset = Fine.objects.all()
     serializer_class = FineSerializer
 
+    class StatsSerializer(serializers.Serializer):
+        count = serializers.IntegerField()
+        avg_amount = serializers.FloatField()
+        max_amount = serializers.FloatField()
+        min_amount = serializers.FloatField()
+
+    class StatsSerializer(serializers.Serializer):
+        count = serializers.IntegerField()
+        avg_amount = serializers.FloatField()
+        max_amount = serializers.IntegerField()
+        min_amount = serializers.IntegerField()
+
+    @action(detail=False, methods=["GET"], url_path="stats")
+    def get_stats(self, request, *args, **kwargs):
+        stats = Fine.objects.aggregate(
+            count=Count("*"),
+            avg_amount=Avg("amount"),
+            max_amount=Max("amount"),
+            min_amount=Min("amount"),
+        )
+        
+        serializer = self.StatsSerializer(instance=stats)
+        return Response(serializer.data)
+
 class RegistrationCardViewSet(
     mixins.CreateModelMixin,
     mixins.UpdateModelMixin,
@@ -95,6 +137,24 @@ class RegistrationCardViewSet(
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    class StatsSerializer(serializers.Serializer):
+        count = serializers.IntegerField()
+        avg_id = serializers.FloatField()
+        max_id = serializers.IntegerField()
+        min_id = serializers.IntegerField()
+
+    @action(detail=False, methods=["GET"], url_path="stats")
+    def get_stats(self, request, *args, **kwargs):
+        stats = RegistrationCard.objects.aggregate(
+            count=Count("*"),
+            avg_id=Avg("id"),
+            max_id=Max("id"),
+            min_id=Min("id"),
+        )
+        
+        serializer = self.StatsSerializer(instance=stats)
+        return Response(serializer.data)
+
 class RecordViewSet(
     mixins.CreateModelMixin,
     mixins.UpdateModelMixin,
@@ -112,3 +172,21 @@ class RecordViewSet(
         if not self.request.user.is_superuser:
             qs = qs.filter(registrationCard__user=self.request.user)
         return qs
+
+    class StatsSerializer(serializers.Serializer):
+        count = serializers.IntegerField()
+        avg_id = serializers.FloatField()
+        max_id = serializers.IntegerField()
+        min_id = serializers.IntegerField()
+
+    @action(detail=False, methods=["GET"], url_path="stats")
+    def get_stats(self, request, *args, **kwargs):
+        stats = Record.objects.aggregate(
+            count=Count("*"),
+            avg_id=Avg("id"),
+            max_id=Max("id"),
+            min_id=Min("id"),
+        )
+        
+        serializer = self.StatsSerializer(instance=stats)
+        return Response(serializer.data)

@@ -75,7 +75,7 @@ class Fine(models.Model):
         choices=FineType.choices,
         default=FineType.OVERDUE
     )
-    amount = models.TextField("Сумма")
+    amount = models.IntegerField("Сумма")
     date = models.DateField("Дата")
 
     class Meta:

@@ -83,7 +83,7 @@ function formatFineType(type) {
           <div class="col">
             <div class="form-floating">
               <input
-                type="text"
+                type="number"
                 class="form-control"
                 v-model="fineToAdd.amount"
                 required
@@ -140,7 +140,7 @@ function formatFineType(type) {
               <label>Тип штрафа</label>
             </div>
             <div class="form-floating mb-2">
-              <input type="text" class="form-control" v-model="fineToEdit.amount" />
+              <input type="number" class="form-control" v-model="fineToEdit.amount" />
               <label>Сумма</label>
             </div>
             <div class="form-floating mb-2">
