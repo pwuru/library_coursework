@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onBeforeMount } from 'vue';
+import { ref, onBeforeMount, computed } from 'vue';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
@@ -15,6 +15,15 @@ const loading = ref(false);
 const recordToAdd = ref({})
 const recordToEdit = ref({})
 const stats = ref({});
+const showFilters = ref(false);
+const filters = ref({
+  book_issue_date_from: "",
+  book_issue_date_to: "",
+  fine_status: "",
+  registrationCard: "",
+  book: "",
+  fine: ""
+});
 
 async function fetchRecords() {
   loading.value = true;
@@ -68,6 +77,9 @@ async function onUpdateRecord() {
 
 async function onRecordEditClick(record) {
   recordToEdit.value = { ...record };
+  recordToEdit.value.registrationCard = record.registrationCard?.id || null;
+  recordToEdit.value.book = record.book?.id || null;
+  recordToEdit.value.fine = record.fine?.id || null;
 }
 
 async function onRemoveClick(record) {
@@ -81,14 +93,6 @@ function formatDate(date) {
   return new Date(date).toLocaleDateString('ru-RU');
 }
 
-onBeforeMount(async () => {
-  await fetchRecords();
-  await fetchCards();
-  await fetchBooks();
-  await fetchFines();
-  await fetchStats();
-})
-
 function formatFineType(type) {
   const map = {
     'overdue': 'Нарушение сроков возврата',
@@ -98,6 +102,65 @@ function formatFineType(type) {
   return map[type] || type;
 }
 
+function clearFilters() {
+  filters.value = {
+    book_issue_date_from: "",
+    book_issue_date_to: "",
+    fine_status: "",
+    registrationCard: "",
+    book: "",
+    fine: ""
+  };
+}
+
+const filteredRecords = computed(() => {
+  return records.value.filter(record => {
+    if (filters.value.book_issue_date_from && record.book_issue_date < filters.value.book_issue_date_from) return false;
+    if (filters.value.book_issue_date_to && record.book_issue_date > filters.value.book_issue_date_to) return false;
+    if (filters.value.fine_status && record.fine_status !== filters.value.fine_status) return false;
+    if (filters.value.registrationCard && record.registrationCard != filters.value.registrationCard) return false;
+    if (filters.value.book && record.book != filters.value.book) return false;
+    if (filters.value.fine && record.fine != filters.value.fine) return false;
+    return true;
+  });
+});
+
+async function exportToExcel() {
+  try {
+    const response = await axios.get("/api/records/export-excel/", {
+      responseType: 'blob'
+    });
+    
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    
+    let filename = "records.xlsx";
+    const contentDisposition = response.headers['content-disposition'];
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename=(.+)/);
+      if (match && match[1]) {
+        filename = match[1];
+      }
+    }
+    
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Ошибка при экспорте:', error);
+  }
+}
+
+onBeforeMount(async () => {
+  await fetchRecords();
+  await fetchCards();
+  await fetchBooks();
+  await fetchFines();
+  await fetchStats();
+})
 </script>
 
 <template>
@@ -109,38 +172,67 @@ function formatFineType(type) {
       <span>Минимальный ID: {{ stats.min_id || 0 }}</span>
     </div>
 
+    <div class="mb-2" style="display: flex; gap: 10px;">
+      <button class="btn btn-light border px-3 py-2" @click="showFilters = !showFilters" style="min-width: 150px; white-space: nowrap; color: black;">
+        {{ showFilters ? 'Скрыть фильтры' : 'Показать фильтры' }}
+      </button>
+      <button class="btn btn-success px-3 py-2" @click="exportToExcel" style="min-width: 150px; white-space: nowrap;">
+        Экспорт в Excel
+      </button>
+    </div>
+
+    <div v-if="showFilters" class="p-2 border rounded mb-3">
+      <div class="row g-2">
+        <div class="col-md-2">
+          <input v-model="filters.book_issue_date_from" type="date" class="form-control form-control-sm" placeholder="Дата выдачи от">
+        </div>
+        <div class="col-md-2">
+          <input v-model="filters.book_issue_date_to" type="date" class="form-control form-control-sm" placeholder="Дата выдачи до">
+        </div>
+        <div class="col-md-2">
+          <select v-model="filters.fine_status" class="form-control form-control-sm">
+            <option value="">Все статусы</option>
+            <option value="no_fine">Нет</option>
+            <option value="unpaid">Не оплачен</option>
+            <option value="paid">Оплачен</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select v-model="filters.registrationCard" class="form-control form-control-sm">
+            <option :value="null">Все карточки</option>
+            <option v-for="card in cards" :key="card.id" :value="card.id">Карточка #{{ card.id }}</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select v-model="filters.book" class="form-control form-control-sm">
+            <option :value="null">Все книги</option>
+            <option v-for="book in books" :key="book.id" :value="book.id">{{ book.name }}</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-sm btn-outline-danger w-100" @click="clearFilters">Очистить</button>
+        </div>
+      </div>
+    </div>
+
     <div class="p-2 px-0">
       <form @submit.prevent.stop="onRecordAdd">
         <div class="row">
           <div class="col">
             <div class="form-floating">
-              <input
-                type="date"
-                class="form-control"
-                v-model="recordToAdd.book_issue_date"
-                required
-              />
+              <input type="date" class="form-control" v-model="recordToAdd.book_issue_date" required />
               <label>Дата выдачи</label>
             </div>
           </div>
           <div class="col">
             <div class="form-floating">
-              <input
-                type="date"
-                class="form-control"
-                v-model="recordToAdd.expected_book_accept_date"
-                required
-              />
+              <input type="date" class="form-control" v-model="recordToAdd.expected_book_accept_date" required />
               <label>Ожидаемая дата возврата</label>
             </div>
           </div>
           <div class="col">
             <div class="form-floating">
-              <input
-                type="date"
-                class="form-control"
-                v-model="recordToAdd.book_accept_date"
-              />
+              <input type="date" class="form-control" v-model="recordToAdd.book_accept_date" />
               <label>Дата возврата</label>
             </div>
           </div>
@@ -158,9 +250,7 @@ function formatFineType(type) {
             <div class="form-floating">
               <select class="form-control" v-model="recordToAdd.registrationCard">
                 <option :value="null">Не выбрано</option>
-                <option v-for="card in cards" :key="card.id" :value="card.id">
-                  Карточка #{{ card.id }}
-                </option>
+                <option v-for="card in cards" :key="card.id" :value="card.id">Карточка #{{ card.id }}</option>
               </select>
               <label>Карточка</label>
             </div>
@@ -169,9 +259,7 @@ function formatFineType(type) {
             <div class="form-floating">
               <select class="form-control" v-model="recordToAdd.book">
                 <option :value="null">Не выбрано</option>
-                <option v-for="book in books" :key="book.id" :value="book.id">
-                  {{ book.name }} ({{ book.author }})
-                </option>
+                <option v-for="book in books" :key="book.id" :value="book.id">{{ book.name }} ({{ book.author }})</option>
               </select>
               <label>Книга</label>
             </div>
@@ -180,9 +268,7 @@ function formatFineType(type) {
             <div class="form-floating">
               <select class="form-control" v-model="recordToAdd.fine">
                 <option :value="null">Не выбрано</option>
-                <option v-for="fine in fines" :key="fine.id" :value="fine.id">
-                  {{ formatFineType(fine.fineType) }} - {{ fine.amount }} руб.
-                </option>
+                <option v-for="fine in fines" :key="fine.id" :value="fine.id">{{ formatFineType(fine.fineType) }} - {{ fine.amount }} руб.</option>
               </select>
               <label>Штраф</label>
             </div>
@@ -195,7 +281,7 @@ function formatFineType(type) {
     </div>
 
     <div class="px-0">
-      <div v-for="item in records" class="record-item mb-2 p-2 border rounded">
+      <div v-for="item in filteredRecords" class="record-item mb-2 p-2 border rounded">
         <div>
           Дата выдачи: {{ formatDate(item.book_issue_date) }},
           ожидаемая дата возврата: {{ formatDate(item.expected_book_accept_date) }}, 
@@ -245,27 +331,21 @@ function formatFineType(type) {
             <div class="form-floating mb-2">
               <select class="form-control" v-model="recordToEdit.registrationCard">
                 <option :value="null">Не выбрано</option>
-                <option v-for="card in cards" :key="card.id" :value="card.id">
-                  Карточка #{{ card.id }}
-                </option>
+                <option v-for="card in cards" :key="card.id" :value="card.id">Карточка #{{ card.id }}</option>
               </select>
               <label>Карточка</label>
             </div>
             <div class="form-floating mb-2">
               <select class="form-control" v-model="recordToEdit.book">
                 <option :value="null">Не выбрано</option>
-                <option v-for="book in books" :key="book.id" :value="book.id">
-                  {{ book.name }} ({{ book.author }})
-                </option>
+                <option v-for="book in books" :key="book.id" :value="book.id">{{ book.name }} ({{ book.author }})</option>
               </select>
               <label>Книга</label>
             </div>
             <div class="form-floating mb-2">
               <select class="form-control" v-model="recordToEdit.fine">
                 <option :value="null">Не выбрано</option>
-                <option v-for="fine in fines" :key="fine.id" :value="fine.id">
-                  {{ formatFineType(fine.fineType) }} - {{ fine.amount }} руб.
-                </option>
+                <option v-for="fine in fines" :key="fine.id" :value="fine.id">{{ formatFineType(fine.fineType) }} - {{ fine.amount }} руб.</option>
               </select>
               <label>Штраф</label>
             </div>

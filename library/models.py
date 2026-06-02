@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+import pyotp
 
 class TimeStampModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, null=True)
@@ -26,11 +27,12 @@ class UserProfile(TimeStampModel):
         null=True,
         blank=True
     )
+    totp_key = models.CharField(max_length=128, null=True, blank=True)
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
         if created:
-            UserProfile.objects.create(user=instance)
+            UserProfile.objects.create(user=instance, totp_key=pyotp.random_base32())
 
 class RegistrationCard(models.Model):
     photo = models.ImageField("Фото", upload_to="registration_cards", null=True, blank=True)

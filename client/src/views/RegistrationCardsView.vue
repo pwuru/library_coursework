@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onBeforeMount } from 'vue';
+import { ref, onBeforeMount, computed } from 'vue';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
@@ -18,6 +18,11 @@ const cardEditImageUrl = ref();
 const showImageModal = ref(false);
 const currentImageUrl = ref('');
 const stats = ref({});
+const showFilters = ref(false);
+const filters = ref({
+  id: "",
+  user: ""
+});
 
 function cardAddPictureChange(event) {
   const file = event.target.files[0];
@@ -56,7 +61,6 @@ async function onCardAdd() {
     formData.append('photo', cardPictureRef.value.files[0]);
   }
 
-  formData.append('user', cardToAdd.value.user);
   await axios.post("/api/registrationCards/", formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
@@ -77,8 +81,6 @@ async function onUpdateCard() {
   if (cardEditPictureRef.value && cardEditPictureRef.value.files[0]) {
     formData.append('photo', cardEditPictureRef.value.files[0]);
   }
-  
-  formData.append('user', cardToEdit.value.user);
   
   await axios.put(`/api/registrationCards/${cardToEdit.value.id}/`, formData, {
     headers: {
@@ -113,6 +115,50 @@ function openImageModal(photoUrl) {
   showImageModal.value = true;
 }
 
+function clearFilters() {
+  filters.value = {
+    id: "",
+    user: ""
+  };
+}
+
+const filteredCards = computed(() => {
+  return cards.value.filter(card => {
+    if (filters.value.id && card.id != filters.value.id) return false;
+    if (filters.value.user && card.user != filters.value.user) return false;
+    return true;
+  });
+});
+
+async function exportToExcel() {
+  try {
+    const response = await axios.get("/api/registrationCards/export-excel/", {
+      responseType: 'blob'
+    });
+    
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    
+    let filename = "cards.xlsx";
+    const contentDisposition = response.headers['content-disposition'];
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename=(.+)/);
+      if (match && match[1]) {
+        filename = match[1];
+      }
+    }
+    
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Ошибка при экспорте:', error);
+  }
+}
+
 onBeforeMount(async () => {
   await fetchCards();
   await fetchStats();
@@ -127,33 +173,41 @@ onBeforeMount(async () => {
       <span>Максимальный ID: {{ stats.max_id || 0 }}</span>
       <span>Минимальный ID: {{ stats.min_id || 0 }}</span>
     </div>
+
+    <div class="mb-2" style="display: flex; gap: 10px;">
+      <button class="btn btn-light border px-3 py-2" @click="showFilters = !showFilters" style="min-width: 150px; white-space: nowrap; color: black;">
+        {{ showFilters ? 'Скрыть фильтры' : 'Показать фильтры' }}
+      </button>
+      <button class="btn btn-success px-3 py-2" @click="exportToExcel" style="min-width: 150px; white-space: nowrap;">
+        Экспорт в Excel
+      </button>
+    </div>
+
+    <div v-if="showFilters" class="p-2 border rounded mb-3">
+      <div class="row g-2">
+        <div class="col-md-5">
+          <input v-model="filters.id" type="number" class="form-control form-control-sm" placeholder="ID карточки">
+        </div>
+        <div class="col-md-5">
+          <input v-model="filters.user" type="number" class="form-control form-control-sm" placeholder="ID пользователя">
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-sm btn-outline-danger w-100" @click="clearFilters">Очистить</button>
+        </div>
+      </div>
+    </div>
+
     <div class="p-2 px-0">
       <form @submit.prevent.stop="onCardAdd" enctype="multipart/form-data">
         <div class="row">
           <div class="col">
             <div class="form-floating">
-              <input
-                type="file"
-                ref="cardPictureRef"
-                class="form-control"
-                @change="cardAddPictureChange"
-              />
+              <input type="file" ref="cardPictureRef" class="form-control" @change="cardAddPictureChange" />
               <label>Фото</label>
             </div>
           </div>
           <div class="col-auto">
             <img :src="cardAddImageUrl" style="max-height: 60px;" alt="">
-          </div>
-          <div class="col">
-            <div class="form-floating">
-              <input
-                type="text"
-                class="form-control"
-                v-model="cardToAdd.user"
-                required
-              />
-              <label>ID пользователя</label>
-            </div>
           </div>
           <div class="col-auto">
             <button class="btn btn-primary"><i class="bi bi-plus-lg"></i></button>
@@ -163,7 +217,7 @@ onBeforeMount(async () => {
     </div>
 
     <div class="px-0">
-      <div v-for="item in cards" class="card-item mb-2 p-2 border rounded">
+      <div v-for="item in filteredCards" class="card-item mb-2 p-2 border rounded">
         <div>ID карточки: <strong>{{ item.id }}</strong>, ID пользователя: <strong>{{ item.user }}</strong></div>
         <div v-if="item.photo" class="card-photo">
           <img 
@@ -195,14 +249,10 @@ onBeforeMount(async () => {
           <div class="modal-body">
             <div class="form-floating mb-2">
               <input type="file" class="form-control" ref="cardEditPictureRef" @change="cardEditPictureChange" />
-              <label>Фото</label>
+              <label>Новое фото</label>
             </div>
             <div class="mb-2">
               <img :src="cardEditImageUrl" style="max-height: 100px;" alt="Текущее фото">
-            </div>
-            <div class="form-floating mb-2">
-              <input type="text" class="form-control" v-model="cardToEdit.user" />
-              <label>ID пользователя</label>
             </div>
           </div>
           <div class="modal-footer">

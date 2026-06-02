@@ -1,5 +1,25 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
+import { onBeforeMount } from 'vue';
+import axios from 'axios';
+import Cookies from 'js-cookie';
+import { useUserStore } from '@/stores/userStore';
+import { useRouter } from 'vue-router';
+
+const userStore = useUserStore();
+const router = useRouter();
+
+async function handleLogout() {
+  await userStore.logout();
+  router.push('/');
+}
+
+axios.defaults.headers.common['X-CSRFToken'] = Cookies.get("csrftoken");
+
+onBeforeMount(() => {
+  userStore.checkLogin();
+  userStore.checkOTPStatus();
+})
 </script>
 
 <template>
@@ -21,7 +41,7 @@ import { RouterLink, RouterView } from 'vue-router'
         <div class="collapse navbar-collapse" id="navbarNavDropdown">
           <ul class="navbar-nav">
             <li class="nav-item">
-              <router-link class="nav-link" to="/">Книги</router-link>
+              <router-link class="nav-link" to="/books">Книги</router-link>
             </li>
             <li class="nav-item">
               <router-link class="nav-link" to="/registration-cards">Учетные карточки</router-link>
@@ -32,13 +52,16 @@ import { RouterLink, RouterView } from 'vue-router'
             <li class="nav-item">
               <router-link class="nav-link" to="/fines">Штрафы</router-link>
             </li>
-          </ul>
-
-          <ul class="navbar-nav">
+            <li class="nav-item">
+              <router-link class="nav-link" to="/user-profiles">Пользователи</router-link>
+            </li>
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Пользователь</a>
-              <ul class="dropdown-menu">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Пользователь
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end">
                 <li><a class="dropdown-item" href="/admin">Админка</a></li>
+                <li v-if="userStore.userInfo.is_authenticated"><a class="dropdown-item" href="#" @click.prevent="handleLogout">Выйти</a></li>
               </ul>
             </li>
           </ul>

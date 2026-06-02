@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onBeforeMount } from 'vue';
+import { ref, onBeforeMount, computed } from 'vue';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
@@ -14,6 +14,14 @@ const bookToAdd = ref({})
 const bookToEdit = ref({})
 const bookPictureRef = ref();
 const bookAddImageUrl = ref();
+const showFilters = ref(false);
+const filters = ref({
+  name: "",
+  genre: "",
+  author: ""
+});
+
+const genresList = ['Роман', 'Детектив', 'Фантастика', 'Поэзия', 'Драма', 'Приключения', 'Комедия', 'Фэнтези'];
 
 async function fetchBooks() {
   loading.value = true;
@@ -48,6 +56,15 @@ async function onBookAdd() {
   }
 }
 
+function bookAddPictureChange(event) {
+  const file = event.target.files[0];
+  if (file) {
+    bookAddImageUrl.value = URL.createObjectURL(file);
+  } else {
+    bookAddImageUrl.value = null;
+  }
+}
+
 async function onUpdateBook() {
   await axios.put(`/api/books/${bookToEdit.value.id}/`, {
     name: bookToEdit.value.name,
@@ -69,6 +86,42 @@ async function onRemoveClick(book) {
   await fetchStats();
 }
 
+function clearFilters() {
+  filters.value = {
+    name: "",
+    genre: "",
+    author: ""
+  };
+}
+
+const filteredBooks = computed(() => {
+  return books.value.filter(book => {
+    if (filters.value.name && !book.name?.toLowerCase().includes(filters.value.name.toLowerCase())) return false;
+    if (filters.value.genre && book.genre !== filters.value.genre) return false;
+    if (filters.value.author && !book.author?.toLowerCase().includes(filters.value.author.toLowerCase())) return false;
+    return true;
+  });
+});
+
+async function exportToExcel() {
+  try {
+    const response = await axios.get("/api/books/export-excel/", {
+      responseType: 'blob'
+    });
+    
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', response.headers['content-disposition'].split('filename=')[1]);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Ошибка при экспорте:', error);
+  }
+}
+
 onBeforeMount(async () => {
   await fetchBooks();
   await fetchStats();
@@ -80,8 +133,37 @@ onBeforeMount(async () => {
     <div class="d-flex gap-3 p-2 border rounded mb-3">
       <span>Всего книг: {{ stats.count || 0 }}</span>
       <span>Средний год: {{ stats.avg_year ? Math.round(stats.avg_year) : 0 }}</span>
-      <span>Самый новый год: {{ stats.max_year || 0 }}</span>
-      <span>Самый старый год: {{ stats.min_year || 0 }}</span>
+      <span>Самый новый: {{ stats.max_year || 0 }}</span>
+      <span>Самый старый: {{ stats.min_year || 0 }}</span>
+    </div>
+
+    <div class="mb-2" style="display: flex; gap: 10px;">
+      <button class="btn btn-light border px-3 py-2" @click="showFilters = !showFilters" style="min-width: 150px; white-space: nowrap; color: black;">
+        {{ showFilters ? 'Скрыть фильтры' : 'Показать фильтры' }}
+      </button>
+      <button class="btn btn-success px-3 py-2" @click="exportToExcel" style="min-width: 150px; white-space: nowrap;">
+        Экспорт в Excel
+      </button>
+    </div>
+
+    <div v-if="showFilters" class="p-2 border rounded mb-3">
+      <div class="row g-2">
+        <div class="col-md-4">
+          <input v-model="filters.name" type="text" class="form-control form-control-sm" placeholder="Название">
+        </div>
+        <div class="col-md-3">
+          <select v-model="filters.genre" class="form-control form-control-sm">
+            <option value="">Все жанры</option>
+            <option v-for="genre in genresList" :key="genre" :value="genre">{{ genre }}</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <input v-model="filters.author" type="text" class="form-control form-control-sm" placeholder="Автор">
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-sm btn-outline-danger w-100" @click="clearFilters">Очистить</button>
+        </div>
+      </div>
     </div>
 
     <div class="p-2 px-0">
@@ -128,7 +210,7 @@ onBeforeMount(async () => {
     </div>
 
     <div class="px-0">
-      <div v-for="item in books" class="book-item mb-2 p-2 border rounded">
+      <div v-for="item in filteredBooks" class="book-item mb-2 p-2 border rounded">
         <div>
           <strong>{{ item.name }}</strong> - {{ item.author }} ({{ item.date }}, {{ item.genre }})
         </div>
@@ -213,14 +295,5 @@ button {
 
 button i {
   font-size: 16px;
-}
-
-.card {
-  text-align: center;
-}
-
-.card .display-4 {
-  font-size: 2.5rem;
-  margin-bottom: 0;
 }
 </style>

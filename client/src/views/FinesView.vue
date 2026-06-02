@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onBeforeMount } from 'vue';
+import { ref, onBeforeMount, computed } from 'vue';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
@@ -12,6 +12,20 @@ const loading = ref(false);
 const fineToAdd = ref({})
 const fineToEdit = ref({})
 const stats = ref({});
+const showFilters = ref(false);
+const filters = ref({
+  fineType: "",
+  amountMin: "",
+  amountMax: "",
+  dateFrom: "",
+  dateTo: ""
+});
+
+const fineTypesList = [
+  { value: 'overdue', label: 'Нарушение сроков возврата' },
+  { value: 'damage', label: 'Порча книги' },
+  { value: 'lost', label: 'Потеря книги' }
+];
 
 async function fetchFines() {
   loading.value = true;
@@ -54,6 +68,56 @@ async function onRemoveClick(fine) {
   await fetchStats();
 }
 
+function clearFilters() {
+  filters.value = {
+    fineType: "",
+    amountMin: "",
+    amountMax: "",
+    dateFrom: "",
+    dateTo: ""
+  };
+}
+
+const filteredFines = computed(() => {
+  return fines.value.filter(fine => {
+    if (filters.value.fineType && fine.fineType !== filters.value.fineType) return false;
+    if (filters.value.amountMin && fine.amount < parseInt(filters.value.amountMin)) return false;
+    if (filters.value.amountMax && fine.amount > parseInt(filters.value.amountMax)) return false;
+    if (filters.value.dateFrom && fine.date < filters.value.dateFrom) return false;
+    if (filters.value.dateTo && fine.date > filters.value.dateTo) return false;
+    return true;
+  });
+});
+
+async function exportToExcel() {
+  try {
+    const response = await axios.get("/api/fines/export-excel/", {
+      responseType: 'blob'
+    });
+    
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    
+    let filename = "fines.xlsx";
+    const contentDisposition = response.headers['content-disposition'];
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename=(.+)/);
+      if (match && match[1]) {
+        filename = match[1];
+      }
+    }
+    
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Ошибка при экспорте:', error);
+  }
+}
+
 onBeforeMount(async () => {
   await fetchFines();
   await fetchStats();
@@ -72,7 +136,6 @@ function formatFineType(type) {
   };
   return types[type] || type;
 }
-
 </script>
 
 <template>
@@ -82,6 +145,41 @@ function formatFineType(type) {
       <span>Средняя сумма: {{ stats.avg_amount ? Math.round(stats.avg_amount) : 0 }} руб.</span>
       <span>Максимальная сумма: {{ stats.max_amount || 0 }} руб.</span>
       <span>Минимальная сумма: {{ stats.min_amount || 0 }} руб.</span>
+    </div>
+
+    <div class="mb-2" style="display: flex; gap: 10px;">
+      <button class="btn btn-light border px-3 py-2" @click="showFilters = !showFilters" style="min-width: 150px; white-space: nowrap; color: black;">
+        {{ showFilters ? 'Скрыть фильтры' : 'Показать фильтры' }}
+      </button>
+      <button class="btn btn-success px-3 py-2" @click="exportToExcel" style="min-width: 150px; white-space: nowrap;">
+        Экспорт в Excel
+      </button>
+    </div>
+
+    <div v-if="showFilters" class="p-2 border rounded mb-3">
+      <div class="row g-2">
+        <div class="col-md-2">
+          <select v-model="filters.fineType" class="form-control form-control-sm">
+            <option value="">Все типы</option>
+            <option v-for="type in fineTypesList" :key="type.value" :value="type.value">{{ type.label }}</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <input v-model="filters.amountMin" type="number" class="form-control form-control-sm" placeholder="Сумма от">
+        </div>
+        <div class="col-md-2">
+          <input v-model="filters.amountMax" type="number" class="form-control form-control-sm" placeholder="Сумма до">
+        </div>
+        <div class="col-md-2">
+          <input v-model="filters.dateFrom" type="date" class="form-control form-control-sm" placeholder="Дата от">
+        </div>
+        <div class="col-md-2">
+          <input v-model="filters.dateTo" type="date" class="form-control form-control-sm" placeholder="Дата до">
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-sm btn-outline-danger w-100" @click="clearFilters">Очистить</button>
+        </div>
+      </div>
     </div>
 
     <div class="p-2 px-0">
@@ -94,28 +192,18 @@ function formatFineType(type) {
                 <option value="damage">Порча книги</option>
                 <option value="lost">Потеря книги</option>
               </select>
-              <label for="floatingInput">Тип штрафа</label>
+              <label>Тип штрафа</label>
             </div>
           </div>
           <div class="col">
             <div class="form-floating">
-              <input
-                type="number"
-                class="form-control"
-                v-model="fineToAdd.amount"
-                required
-              />
+              <input type="number" class="form-control" v-model="fineToAdd.amount" required />
               <label>Сумма</label>
             </div>
           </div>
           <div class="col">
             <div class="form-floating">
-              <input
-                type="date"
-                class="form-control"
-                v-model="fineToAdd.date"
-                required
-              />
+              <input type="date" class="form-control" v-model="fineToAdd.date" required />
               <label>Дата</label>
             </div>
           </div>
@@ -127,7 +215,7 @@ function formatFineType(type) {
     </div>
 
     <div class="px-0">
-      <div v-for="item in fines" class="fine-item mb-2 p-2 border rounded">
+      <div v-for="item in filteredFines" class="fine-item mb-2 p-2 border rounded">
         <div>
           <strong>{{ formatFineType(item.fineType) }}</strong> - {{ item.amount }} руб. ({{ formatDate(item.date) }})
         </div>
