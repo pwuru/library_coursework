@@ -28,16 +28,17 @@ from library.api import FineViewSet
 from library.api import RegistrationCardViewSet
 from library.api import RecordViewSet
 
-router = DefaultRouter()
+router = DefaultRouter() # СОздаем роутер DRF
+# Запрос → router → ViewSet → метод → сериализатор → БД → ответ
 
-router.register(r"books", BookViewSet)
+router.register(r"books", BookViewSet) # регистрируем маршруты к классам для работы с сущностями
 router.register(r"userProfiles", UserProfileViewSet)
 router.register(r"fines", FineViewSet)
 router.register(r"registrationCards", RegistrationCardViewSet)
 router.register(r"records", RecordViewSet)
 
 urlpatterns = [
-    path('', include(router.urls)),
-    path('admin/', admin.site.urls),
-    path('api/', include(router.urls)),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    path('', include(router.urls)), # все API маршруты из роутера
+    path('admin/', admin.site.urls), # админка
+    path('api/', include(router.urls)), # API маршруты с префиксом /api
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) # медиа

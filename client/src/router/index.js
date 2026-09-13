@@ -15,9 +15,9 @@ const router = createRouter({
         component: LoginView
       },
       {
-        path: '/books',
-        name: 'BooksView',
-        component: BooksView
+        path: '/books', // URL в браузере
+        name: 'BooksView', // маршрут для навигации (в App.vue)
+        component: BooksView // что показываем
       },
       {
         path: '/registration-cards',

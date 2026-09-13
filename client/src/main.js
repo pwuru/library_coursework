@@ -7,9 +7,9 @@ import "bootstrap-icons/font/bootstrap-icons.css"
 import App from './App.vue'
 import router from './router'
 
-const app = createApp(App)
+const app = createApp(App) // создаем Vue-приложение
 
-app.use(createPinia())
-app.use(router)
+app.use(createPinia()) // подключаем pinia для управления состоянием (авторизация и тп)
+app.use(router) // подключаем роутер
 
-app.mount('#app')
+app.mount('#app') // вставляем приложение в index.html где id=app

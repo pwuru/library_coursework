@@ -4,7 +4,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 import pyotp
 
-class TimeStampModel(models.Model):
+class TimeStampModel(models.Model): # абстрактная модель 
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True) 
 
@@ -19,7 +19,7 @@ class UserProfile(TimeStampModel):
 
     name = models.TextField(null=True)
     phone = models.TextField(null=True)
-    user = models.OneToOneField('auth.User', on_delete=models.CASCADE, null=True, blank=True)
+    user = models.OneToOneField('auth.User', on_delete=models.CASCADE, null=True, blank=True) # связь 1 к 1 с юзером джанго
     type = models.CharField(
         max_length=20,
         choices=Type.choices,
@@ -32,7 +32,7 @@ class UserProfile(TimeStampModel):
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
         if created:
-            UserProfile.objects.create(user=instance, totp_key=pyotp.random_base32())
+            UserProfile.objects.create(user=instance, totp_key=pyotp.random_base32()) # при создании юзера автоматически создается userprofile и totp ключ
 
 class RegistrationCard(models.Model):
     photo = models.ImageField("Фото", upload_to="registration_cards", null=True, blank=True)

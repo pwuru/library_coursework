@@ -25,12 +25,12 @@ from library.serializers import RegistrationCardSerializer
 from library.serializers import RecordSerializer
 from library.serializers import UserProfileSerializer
 
-class OTPRequired(BasePermission):
+class OTPRequired(BasePermission): # проверка OTP
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_authenticated and cache.get(f'otp_good_{request.user.id}', False))
 
-class UserProfileViewSet(
-    mixins.CreateModelMixin,
+class UserProfileViewSet( # логика работы с моделью
+    mixins.CreateModelMixin, # каждый миксин - метод
     mixins.UpdateModelMixin,
     mixins.RetrieveModelMixin,
     mixins.ListModelMixin, 
@@ -38,11 +38,11 @@ class UserProfileViewSet(
     GenericViewSet,
 ):
     queryset = UserProfile.objects.all()
-    serializer_class = UserProfileSerializer
+    serializer_class = UserProfileSerializer # какой сериализатор используем
     permission_classes = [IsAuthenticated]
 
     class OTPSerializer(serializers.Serializer):
-        key = serializers.CharField()
+        key = serializers.CharField() # принимает OTP код
 
     class OTPRequired(BasePermission):
         def has_permission(self, request, view):
@@ -53,21 +53,21 @@ class UserProfileViewSet(
         
         if self.request.user.is_superuser:
             user_id = self.request.query_params.get('user_id')
-            if user_id:
+            if user_id: # суперюзер может фильтровать по обычным юзерам
                 qs = qs.filter(user_id=user_id)
-            return qs
-        return qs.filter(user=self.request.user)
+            return qs # суперюзер имеет доступ ко всем данным
+        return qs.filter(user=self.request.user) # обычный видит только свои данные
         
-    @action(detail=False, url_path="check-login", methods=['GET'], permission_classes=[])
+    @action(detail=False, url_path="check-login", methods=['GET'], permission_classes=[]) # создает эндпоинт
     def get_check_login(self, request, *args, **kwargs):
-        return Response({
+        return Response({ # возвращает статус, имя и права
             'is_authenticated': request.user.is_authenticated,
             'username': request.user.username,
             'is_superuser': request.user.is_superuser
         })
     
     @action(detail=False, url_path="login", methods=['POST'], permission_classes=[])
-    def use_login(self, request, *args, **kwargs):
+    def use_login(self, request, *args, **kwargs): # вход
         username = request.data.get('username')
         password = request.data.get('password')
         user = authenticate(username=username, password=password)
@@ -78,17 +78,17 @@ class UserProfileViewSet(
         })
 
     @action(detail=False, url_path='otp-login', methods=['POST'], serializer_class=OTPSerializer)
-    def otp_login(self, request, *args, **kwargs):
-        if not request.user.userprofile.totp_key:
+    def otp_login(self, request, *args, **kwargs): # проверка OTP
+        if not request.user.userprofile.totp_key: 
             return Response({'success': False, 'error': 'OTP not configured'})
-        totp = pyotp.TOTP(request.user.userprofile.totp_key)
+        totp = pyotp.TOTP(request.user.userprofile.totp_key) # берет totp из профиля юхера
         
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        serializer = self.get_serializer(data=request.data) # передаем данные с фронта в формате json
+        serializer.is_valid(raise_exception=True) # проверяем данные 
 
         success = False
-        if totp.verify(serializer.validated_data['key']):
-            cache.set(f'otp_good_{request.user.id}', True, 600)
+        if totp.verify(serializer.validated_data['key']): # проверяем ключ
+            cache.set(f'otp_good_{request.user.id}', True, 600) # сохраняет флаг otp_good в кэше на 10 минут
             success = True
 
         return Response({'success': success})
@@ -98,14 +98,14 @@ class UserProfileViewSet(
         otp_good = cache.get(f'otp_good_{request.user.id}', False)
         return Response({'otp_good': otp_good})
     
-    @action(detail=False, url_path='otp-required', permission_classes=[OTPRequired])
+    @action(detail=False, url_path='otp-required', permission_classes=[OTPRequired]) # доступен только при проверке OTP
     def page_with_otp_required(self, request, *args, **kwargs):
         return Response({'success': True})
 
     @action(detail=False, url_path="logout", methods=['POST'], permission_classes=[])
-    def logout(self, request, *args, **kwargs):
+    def logout(self, request, *args, **kwargs): # выход
         django_logout(request)
-        cache.delete(f'otp_good_{request.user.id}')
+        cache.delete(f'otp_good_{request.user.id}') # удаляет флаг из кэша
         return Response({'success': True})
 
     class StatsSerializer(serializers.Serializer):
@@ -116,19 +116,19 @@ class UserProfileViewSet(
 
     @action(detail=False, methods=["GET"], url_path="stats")
     def get_stats(self, request, *args, **kwargs):
-        stats = UserProfile.objects.aggregate(
-            count=Count("*"),
+        stats = UserProfile.objects.aggregate( # aggregate считает по всей таблице
+            count=Count("*"), # выполняется в БД SQL
             avg_id=Avg("id"),
             max_id=Max("id"),
             min_id=Min("id"),
         )
         
-        serializer = self.StatsSerializer(instance=stats)
+        serializer = self.StatsSerializer(instance=stats) # преобразует результат из БД в json
         return Response(serializer.data)
 
     @action(detail=False, methods=["GET"], url_path="export-excel")
     def export_excel(self, request):
-        profiles = self.get_queryset()
+        profiles = self.get_queryset() # суперюзер получит всю инфу, обычный - только о себе
         
         data = []
         for profile in profiles:
@@ -141,19 +141,19 @@ class UserProfileViewSet(
                 "Логин": profile.user.username if profile.user else None,
             })
         
-        df = pd.DataFrame(data)
-        output = BytesIO() 
-        with pd.ExcelWriter(output, engine="openpyxl") as writer:
-            df.to_excel(writer, index=False, sheet_name="Пользователи")
+        df = pd.DataFrame(data) # превращает список в таблицу pandas
+        output = BytesIO() # создает буфер в памяти, чтобы сразу отдать файл пользователю 
+        with pd.ExcelWriter(output, engine="openpyxl") as writer: # openpyxl - библиотека для создания .xlsx
+            df.to_excel(writer, index=False, sheet_name="Пользователи") # записывает DataFrame в output
         
-        output.seek(0)
+        output.seek(0) # перемещает курсор в начало файла для последующего чтения
         today = datetime.datetime.now().strftime("%Y-%m-%d")
         filename = f"users_{today}.xlsx"   
         response = HttpResponse(
-            output.read(),
-            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            output.read(), # читаем данные по байтам
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", # так браузер поймет, что это .xlsx файл 
         )
-        response["Content-Disposition"] = f"attachment; filename={filename}"   
+        response["Content-Disposition"] = f"attachment; filename={filename}" # скачиваем, а не открываем в браузере (attachment)
         return response
 
 class BookViewSet(
@@ -168,9 +168,9 @@ class BookViewSet(
     serializer_class = BookSerializer
 
     def get_permissions(self):
-        if self.action in ['update', 'partial_update', 'destroy']:
+        if self.action in ['update', 'partial_update', 'destroy']: # редактирование, удаление только при авторизации + проверке OTP
             return [IsAuthenticated(), UserProfileViewSet.OTPRequired()]
-        return [IsAuthenticated()]
+        return [IsAuthenticated()] # просмотр при авторизации
 
     class StatsSerializer(serializers.Serializer):
         count = serializers.IntegerField();
@@ -242,15 +242,9 @@ class FineViewSet(
         if self.request.user.is_superuser:
             user_id = self.request.query_params.get('user_id')
             if user_id:
-                qs = qs.filter(record__registrationCard__user_id=user_id).distinct()
+                qs = qs.filter(record__registrationCard__user_id=user_id).distinct() # фильрация по цепочке штраф -> запись -> карточка -> юзер
             return qs
         return qs.filter(record__registrationCard__user=self.request.user).distinct()
-
-    class StatsSerializer(serializers.Serializer):
-        count = serializers.IntegerField()
-        avg_amount = serializers.FloatField()
-        max_amount = serializers.FloatField()
-        min_amount = serializers.FloatField()
 
     class StatsSerializer(serializers.Serializer):
         count = serializers.IntegerField()
@@ -326,7 +320,7 @@ class RegistrationCardViewSet(
         # фильтруем по текущему юзеру
         return qs.filter(user=self.request.user)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer): # при создании карточки автоматически привязывается к текущему юзеру
         serializer.save(user=self.request.user)
 
     class StatsSerializer(serializers.Serializer):

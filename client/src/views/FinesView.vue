@@ -8,6 +8,7 @@ onBeforeMount(() => {
 })
 
 const fines = ref([]);
+const cards = ref([]); 
 const loading = ref(false);
 const fineToAdd = ref({})
 const fineToEdit = ref({})
@@ -18,7 +19,8 @@ const filters = ref({
   amountMin: "",
   amountMax: "",
   dateFrom: "",
-  dateTo: ""
+  dateTo: "",
+  registrationCard: ""
 });
 
 const fineTypesList = [
@@ -32,6 +34,11 @@ async function fetchFines() {
   const r = await axios.get("/api/fines/");
   fines.value = r.data;
   loading.value = false;
+}
+
+async function fetchCards() {
+  const r = await axios.get("/api/registrationCards/");
+  cards.value = r.data;
 }
 
 async function fetchStats() {
@@ -74,7 +81,8 @@ function clearFilters() {
     amountMin: "",
     amountMax: "",
     dateFrom: "",
-    dateTo: ""
+    dateTo: "",
+    registrationCard: ""
   };
 }
 
@@ -85,6 +93,7 @@ const filteredFines = computed(() => {
     if (filters.value.amountMax && fine.amount > parseInt(filters.value.amountMax)) return false;
     if (filters.value.dateFrom && fine.date < filters.value.dateFrom) return false;
     if (filters.value.dateTo && fine.date > filters.value.dateTo) return false;
+    if (filters.value.registrationCard && fine.registrationCard_id != filters.value.registrationCard) return false;
     return true;
   });
 });
@@ -121,6 +130,7 @@ async function exportToExcel() {
 onBeforeMount(async () => {
   await fetchFines();
   await fetchStats();
+  await fetchCards();
 })
 
 function formatDate(date) {
@@ -158,10 +168,16 @@ function formatFineType(type) {
 
     <div v-if="showFilters" class="p-2 border rounded mb-3">
       <div class="row g-2">
-        <div class="col-md-2">
+        <div class="col-md-1">
           <select v-model="filters.fineType" class="form-control form-control-sm">
             <option value="">Все типы</option>
             <option v-for="type in fineTypesList" :key="type.value" :value="type.value">{{ type.label }}</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select v-model="filters.registrationCard" class="form-control form-control-sm">
+            <option value="">Все карточки</option>
+            <option v-for="card in cards" :key="card.id" :value="card.id">Карточка #{{ card.id }}</option>
           </select>
         </div>
         <div class="col-md-2">
@@ -176,7 +192,7 @@ function formatFineType(type) {
         <div class="col-md-2">
           <input v-model="filters.dateTo" type="date" class="form-control form-control-sm" placeholder="Дата до">
         </div>
-        <div class="col-md-2">
+        <div class="col-md-1">
           <button class="btn btn-sm btn-outline-danger w-100" @click="clearFilters">Очистить</button>
         </div>
       </div>

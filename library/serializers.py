@@ -8,8 +8,8 @@ from library.models import UserProfile
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
-        model = UserProfile
-        fields = ['id', 'name', 'phone', 'user', 'type']
+        model = UserProfile # какую модель используем
+        fields = ['id', 'name', 'phone', 'user', 'type'] # какие поля включать в json
 
 class BookSerializer(serializers.ModelSerializer):
     class Meta:
@@ -17,9 +17,16 @@ class BookSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'genre', 'date', 'author', 'photo']
 
 class FineSerializer(serializers.ModelSerializer):
+    registrationCard_id = serializers.SerializerMethodField() # добавляем поле registrationCard.id в сериалайзер для фильтрации
+    def get_registrationCard_id(self, obj):
+        record = obj.record_set.filter(registrationCard__isnull=False).first() # берем первую запись со связанной карточкой
+        if record and record.registrationCard:
+            return record.registrationCard.id
+        return None
+
     class Meta:
         model = Fine
-        fields = ['id', 'fineType', 'amount', 'date']
+        fields = ['id', 'fineType', 'amount', 'date', 'registrationCard_id']
 
 class RegistrationCardSerializer(serializers.ModelSerializer):
     def create(self, validated_data): 

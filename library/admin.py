@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from library.models import TimeStampModel, UserProfile, Record, RegistrationCard, Book, Fine
 
-@admin.register(UserProfile)
+@admin.register(UserProfile) # регистрируем модели в админке
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ['id', 'name', 'phone']
 

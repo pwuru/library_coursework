@@ -199,13 +199,13 @@ onBeforeMount(async () => {
         </div>
         <div class="col-md-2">
           <select v-model="filters.registrationCard" class="form-control form-control-sm">
-            <option :value="null">Все карточки</option>
+            <option value="">Все карточки</option>
             <option v-for="card in cards" :key="card.id" :value="card.id">Карточка #{{ card.id }}</option>
           </select>
         </div>
         <div class="col-md-2">
           <select v-model="filters.book" class="form-control form-control-sm">
-            <option :value="null">Все книги</option>
+            <option value="">Все книги</option>
             <option v-for="book in books" :key="book.id" :value="book.id">{{ book.name }}</option>
           </select>
         </div>
